@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entretien Robot</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #141414 0%, #8B0000 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 3px solid #C80000;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #ccc;
+            font-size: 16px;
+        }
+
+        .status {
+            background: #3C3C3C;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success { background: #2d5016; }
+        .status.error { background: #5d1a1a; }
+
+        .login-section, .robot-selection, .sheet-selection, .entretien-section {
+            display: none;
+        }
+
+        .login-section.active, .robot-selection.active, .sheet-selection.active, .entretien-section.active {
+            display: block;
+        }
+
+        .login-card {
+            background: rgba(60, 60, 60, 0.8);
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .login-card h2 {
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #8B0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: #C80000;
+        }
+
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .robot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .robot-card {
+            background: #8B0000;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+        }
+
+        .robot-card:hover {
+            background: #C80000;
+            transform: translateY(-5px);
+        }
+
+        .robot-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .robot-name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .section-group {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #FF4444;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(139, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .section-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .section-item {
+            background: #3C3C3C;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-item:hover {
+            background: #8B0000;
+        }
+
+        .back-btn {
+            background: #555;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background: #666;
+        }
+
+        .history-card {
+            background: #3C3C3C;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #FFD700;
+        }
+
+        .history-item {
+            border-left: 3px solid #C80000;
+            padding-left: 15px;
+            margin-bottom: 15px;
+        }
+
+        .history-date {
+            color: #aaa;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .history-problem {
+            color: white;
+            margin-left: 15px;
+            font-size: 14px;
+        }
+
+        .history-remark {
+            color: #FFF4CC;
+            margin-left: 15px;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .nav-buttons button {
+            flex: 1;
+        }
+
+        .form-card {
+            background: #3C3C3C;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .form-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field label {
+            color: #aaa;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .field input, .field select, .field textarea {
+            background: #141414;
+            color: white;
+            border: 1px solid #555;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .field textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .comment-field {
+            grid-column: 1 / -1;
+        }
+
+        .comment-field textarea {
+            background: #FFF4CC;
+            color: #141414;
+        }
+
+        .select-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .select-btn {
+            flex: 1;
+            padding: 12px;
+            background: #141414;
+            border: 2px solid #555;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .select-btn.selected {
+            background: #8B0000;
+            border-color: #C80000;
+        }
+
+        .save-btn {
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+        }
+
+        .spinner {
+            border: 4px solid #555;
+            border-top: 4px solid #C80000;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Entretien Bimensuel Robot</h1>
+            <p>CARAP50152 - Gestion des entretiens</p>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <!-- SECTION LOGIN SHAREPOINT -->
+        <div class="login-section active" id="loginSection">
+            <div class="login-card">
+                <h2>Connexion à SharePoint</h2>
+                <p style="margin-bottom: 20px; color: #aaa;">
+                    Connectez-vous avec votre compte Microsoft pour accéder aux fichiers d'entretien.
+                </p>
+                <button class="btn" onclick="loginToSharePoint()">
+                    🔐 Se connecter avec Microsoft
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION SÉLECTION ROBOT -->
+        <div class="robot-selection" id="robotSelection">
+            <h2 style="margin-bottom: 20px;">Sélectionner un robot</h2>
+            <div class="robot-grid">
+                <div class="robot-card" onclick="selectRobot('Robot 1')">
+                    <div class="robot-icon">🤖</div>
+                    <div class="robot-name">Robot 1</div>
+                </div>
+                <div class="robot-card" onclick="selectRobot('Robot 2')">
+                    <div class="robot-icon">🤖</div>
+                    <div class="robot-name">Robot 2</div>
+                </div>
+                <div class="robot-card" onclick="selectRobot('Robot 3')">
+                    <div class="robot-icon">🤖</div>
+                    <div class="robot-name">Robot 3</div>
+                </div>
+                <div class="robot-card" onclick="selectRobot('Robot 4')">
+                    <div class="robot-icon">🤖</div>
+                    <div class="robot-name">Robot 4</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION SÉLECTION ONGLET -->
+        <div class="sheet-selection" id="sheetSelection">
+            <button class="back-btn" onclick="showRobotSelection()">← Retour aux robots</button>
+            <h2 style="margin-bottom: 20px;" id="selectedRobotTitle"></h2>
+            <div id="sectionGroups"></div>
+        </div>
+
+        <!-- SECTION ENTRETIEN -->
+        <div class="entretien-section" id="entretienSection">
+            <button class="back-btn" onclick="showSheetSelection()">← Retour aux sections</button>
+            
+            <div class="history-card" id="historyCard" style="display: none;">
+                <div class="history-title">📋 Résumé des 10 derniers problèmes</div>
+                <div id="historyContent"></div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="btn" id="prevBtn" onclick="navigateSheet(-1)">← Précédent</button>
+                <button class="btn" id="nextBtn" onclick="navigateSheet(1)">Suivant →</button>
+            </div>
+
+            <div class="form-card">
+                <h3 class="form-title" id="formTitle"></h3>
+                <div class="form-grid" id="formFields"></div>
+                <button class="btn save-btn" onclick="saveEntretien()">💾 ENREGISTRER L'ENTRETIEN</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // 🔧 CONFIGURATION - MODIFIER ICI
+        // ========================================
+        
+        const CONFIG = {
+            // SharePoint
+            siteUrl: 'https://riotinto.sharepoint.com/sites/lectro109',
+            
+            // Chemins des fichiers (relatifs à "Shared Documents")
+            robots: {
+                'Robot 1': {
+                    path: '/General/0-Laboratoire 109/RAYON-X/Robot 1/Entretien et etalonnage/RAPPORT ENTRETIEN ANNUEL R3 & R4(EN-5015).xls',
+                    displayName: 'Robot 1'
+                },
+                'Robot 2': {
+                    path: '/General/0-Laboratoire 109/RAYON-X/Robot 2/Entretien et etalonnage/RAPPORT ENTRETIEN ANNUEL R3 & R4(EN-5015).xls',
+                    displayName: 'Robot 2'
+                },
+                'Robot 3': {
+                    path: '/General/0-Laboratoire 109/RAYON-X/Robot 3/Entretien et etalonnage/RAPPORT ENTRETIEN BI-MENSUEL ROBOT 3.xlsm',
+                    displayName: 'Robot 3 - Bi-mensuel'
+                },
+                'Robot 4': {
+                    path: '/General/0-Laboratoire 109/RAYON-X/Robot 4/Entretien et etalonnage/RAPPORT ENTRETIEN BI-MENSUEL ROBOT 4.xlsm',
+                    displayName: 'Robot 4 - Bi-mensuel'
+                }
+            },
+            
+            // Liste des exécutants (modifiable)
+            executants: ['Simon De Champlain', 'Simon Morel', 'Jonathan Bégin'],
+            
+            // Colonnes à ignorer dans le résumé des problèmes
+            ignoreColumns: ['joint', 'joints', 'date', 'exécutant'],
+            
+            // Nombre de lignes d'historique à afficher
+            historyLines: 10
+        };
+        
+        // ========================================
+        // 🔐 AUTHENTIFICATION SHAREPOINT
+        // ========================================
+        
+        // Option 1: Authentification automatique (si déjà connecté à SharePoint)
+        const USE_AUTO_AUTH = true;
+        
+        // Option 2: Si besoin d'authentification explicite, remplir ces champs
+        // (demandez à votre IT pour obtenir ces valeurs)
+        const AUTH_CONFIG = {
+            clientId: '',  // Laisser vide si USE_AUTO_AUTH = true
+            tenantId: ''   // Laisser vide si USE_AUTO_AUTH = true
+        };
+
+        // ========================================
+        // CODE DE L'APPLICATION (NE PAS MODIFIER)
+        // ========================================
+
+        // État de l'application
+        let accessToken = null;
+        let currentRobot = null;
+        let currentSheet = null;
+        let workbook = null;
+        let allSheets = [];
+        let formData = {};
+
+        // Afficher un message
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status show ' + type;
+            setTimeout(() => statusEl.classList.remove('show'), 5000);
+        }
+
+        // Login SharePoint avec Microsoft Authentication Library (MSAL)
+        async function loginToSharePoint() {
+            showStatus('⏳ Connexion en cours...', 'info');
+            
+            // IMPORTANT: Pour une vraie implémentation, utilisez MSAL.js
+            // Pour le moment, simulation pour tester l'interface
+            
+            // VRAIE IMPLÉMENTATION (décommenter quand configuré):
+            /*
+            const msalConfig = {
+                auth: {
+                    clientId: CONFIG.clientId,
+                    authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+                    redirectUri: window.location.origin
+                }
+            };
+            
+            const msalInstance = new msal.PublicClientApplication(msalConfig);
+            
+            try {
+                const loginResponse = await msalInstance.loginPopup({
+                    scopes: ["Files.ReadWrite.All", "Sites.ReadWrite.All"]
+                });
+                accessToken = loginResponse.accessToken;
+                showStatus('✓ Connecté avec succès !', 'success');
+                showRobotSelection();
+            } catch (error) {
+                showStatus('✗ Erreur de connexion: ' + error.message, 'error');
+            }
+            */
+            
+            // SIMULATION (à retirer en production)
+            setTimeout(() => {
+                accessToken = 'SIMULATED_TOKEN';
+                showStatus('✓ Connecté (mode simulation)', 'success');
+                showRobotSelection();
+            }, 1000);
+        }
+
+        // Charger un fichier depuis SharePoint
+        async function loadFileFromSharePoint(filePath) {
+            showStatus('⏳ Chargement du fichier...', 'info');
+            
+            try {
+                if (USE_AUTO_AUTH) {
+                    // Méthode 1: Utiliser l'authentification SharePoint actuelle
+                    const fullUrl = `${CONFIG.siteUrl}/_api/web/GetFileByServerRelativePath(decodedurl='${encodeURIComponent('/sites/lectro109/Shared Documents' + filePath)}')/$value`;
+                    
+                    const response = await fetch(fullUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/octet-stream'
+                        },
+                        credentials: 'include'  // Utilise les cookies d'authentification SharePoint
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true, cellStyles: true });
+                    
+                    showStatus('✓ Fichier chargé avec succès !', 'success');
+                    return true;
+                    
+                } else {
+                    // Méthode 2: Avec token d'authentification (si configuré)
+                    showStatus('⚠️ Authentification requise - configurez AUTH_CONFIG', 'error');
+                    return false;
+                }
+                
+            } catch (error) {
+                showStatus('✗ Erreur: ' + error.message, 'error');
+                console.error('Détails erreur:', error);
+                return false;
+            }
+        }
+
+        // Sauvegarder le fichier sur SharePoint
+        async function saveFileToSharePoint(filePath) {
+            showStatus('⏳ Sauvegarde sur SharePoint...', 'info');
+            
+            try {
+                const wbout = XLSX.write(workbook, { type: 'array', bookType: 'xlsx' });
+                
+                if (USE_AUTO_AUTH) {
+                    const fullUrl = `${CONFIG.siteUrl}/_api/web/GetFolderByServerRelativePath(decodedurl='${encodeURIComponent('/sites/lectro109/Shared Documents' + filePath.substring(0, filePath.lastIndexOf('/')))}')/Files/add(url='${filePath.split('/').pop()}',overwrite=true)`;
+                    
+                    const response = await fetch(fullUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json;odata=verbose',
+                            'Content-Type': 'application/octet-stream',
+                            'X-RequestDigest': await getFormDigest()
+                        },
+                        credentials: 'include',
+                        body: wbout
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    showStatus('✓ Fichier sauvegardé sur SharePoint !', 'success');
+                    return true;
+                    
+                } else {
+                    showStatus('⚠️ Authentification requise', 'error');
+                    return false;
+                }
+                
+            } catch (error) {
+                showStatus('✗ Erreur sauvegarde: ' + error.message, 'error');
+                console.error('Détails erreur:', error);
+                return false;
+            }
+        }
+
+        // Obtenir le Form Digest (requis pour les opérations d'écriture SharePoint)
+        async function getFormDigest() {
+            try {
+                const response = await fetch(`${CONFIG.siteUrl}/_api/contextinfo`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json;odata=verbose'
+                    },
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                return data.d.GetContextWebInformation.FormDigestValue;
+            } catch (error) {
+                console.error('Erreur Form Digest:', error);
+                return '';
+            }
+        }
+
+        // Afficher les robots disponibles
+        function showRobotSelection() {
+            document.querySelectorAll('.login-section, .robot-selection, .sheet-selection, .entretien-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Générer dynamiquement les cartes robots
+            const robotGrid = document.querySelector('.robot-grid');
+            robotGrid.innerHTML = '';
+            
+            Object.entries(CONFIG.robots).forEach(([robotKey, robotData]) => {
+                const card = document.createElement('div');
+                card.className = 'robot-card';
+                card.onclick = () => selectRobot(robotKey);
+                card.innerHTML = `
+                    <div class="robot-icon">🤖</div>
+                    <div class="robot-name">${robotData.displayName}</div>
+                `;
+                robotGrid.appendChild(card);
+            });
+            
+            document.getElementById('robotSelection').classList.add('active');
+        }
+
+        function showSheetSelection() {
+            document.querySelectorAll('.login-section, .robot-selection, .sheet-selection, .entretien-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById('sheetSelection').classList.add('active');
+        }
+
+        function showEntretienSection() {
+            document.querySelectorAll('.login-section, .robot-selection, .sheet-selection, .entretien-section').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.getElementById('entretienSection').classList.add('active');
+        }
+
+        // Sélectionner un robot
+        async function selectRobot(robotKey) {
+            currentRobot = robotKey;
+            const robotConfig = CONFIG.robots[robotKey];
+            const filePath = robotConfig.path;
+            
+            // Charger le fichier depuis SharePoint
+            const success = await loadFileFromSharePoint(filePath);
+            
+            if (success && workbook) {
+                allSheets = workbook.SheetNames;
+                displaySections();
+                document.getElementById('selectedRobotTitle').textContent = robotConfig.displayName;
+                showSheetSelection();
+            }
+        }
+
+        // Grouper les onglets par section
+        function groupSheets(sheets) {
+            const groups = {
+                'Sans section': [],
+                'Broyeur à Mâchoire': [],
+                'Broyeur à Anneaux': [],
+                'Presse': []
+            };
+
+            sheets.forEach(name => {
+                if (name.startsWith('B.M.')) groups['Broyeur à Mâchoire'].push(name);
+                else if (name.startsWith('B.A.')) groups['Broyeur à Anneaux'].push(name);
+                else if (name.startsWith('PR.')) groups['Presse'].push(name);
+                else groups['Sans section'].push(name);
+            });
+
+            return groups;
+        }
+
+        // Afficher les sections
+        function displaySections() {
+            const grouped = groupSheets(allSheets);
+            const container = document.getElementById('sectionGroups');
+            container.innerHTML = '';
+
+            Object.entries(grouped).forEach(([groupName, sheets]) => {
+                if (sheets.length === 0) return;
+
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'section-group';
+                
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'section-title';
+                titleDiv.textContent = groupName;
+                groupDiv.appendChild(titleDiv);
+
+                const listDiv = document.createElement('div');
+                listDiv.className = 'section-list';
+
+                sheets.forEach(sheetName => {
+                    const item = document.createElement('div');
+                    item.className = 'section-item';
+                    item.onclick = () => selectSheet(sheetName);
+                    
+                    const displayName = sheetName.replace(/^(B\.M\.|B\.A\.|PR\.)\s*/, '');
+                    item.innerHTML = `<span>${displayName}</span><span>→</span>`;
+                    
+                    listDiv.appendChild(item);
+                });
+
+                groupDiv.appendChild(listDiv);
+                container.appendChild(groupDiv);
+            });
+        }
+
+        // Sélectionner un onglet
+        function selectSheet(sheetName) {
+            currentSheet = sheetName;
+            formData = {
+                'Date': new Date().toISOString().split('T')[0],
+                'DATE': new Date().toISOString().split('T')[0],
+                'date': new Date().toISOString().split('T')[0]
+            };
+            
+            displayHistory();
+            displayForm();
+            showEntretienSection();
+        }
+
+        // Afficher l'historique
+        function displayHistory() {
+            // Logique d'extraction des problèmes
+            const historyContent = document.getElementById('historyContent');
+            historyContent.innerHTML = '<p style="color: #aaa;">Aucun problème récent détecté</p>';
+            
+            document.getElementById('historyCard').style.display = 'block';
+        }
+
+        // Afficher le formulaire
+        function displayForm() {
+            document.getElementById('formTitle').textContent = currentSheet;
+            const fieldsContainer = document.getElementById('formFields');
+            fieldsContainer.innerHTML = '';
+
+            // Exemple de champs (à adapter selon votre structure Excel)
+            const fields = [
+                { name: 'Date', type: 'date' },
+                { name: 'Exécutant de l\'entretien', type: 'executant' },
+                { name: 'Cylindre rotatif', type: 'select' },
+                { name: 'Roues dentelées', type: 'select' },
+                { name: 'Remarques', type: 'textarea' }
+            ];
+
+            fields.forEach(field => {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = field.type === 'textarea' ? 'field comment-field' : 'field';
+
+                const label = document.createElement('label');
+                label.textContent = field.name;
+                fieldDiv.appendChild(label);
+
+                if (field.type === 'date') {
+                    const input = document.createElement('input');
+                    input.type = 'date';
+                    input.value = formData[field.name] || new Date().toISOString().split('T')[0];
+                    input.oninput = (e) => formData[field.name] = e.target.value;
+                    fieldDiv.appendChild(input);
+                } else if (field.type === 'executant') {
+                    const select = document.createElement('select');
+                    CONFIG.executants.forEach(exec => {
+                        const option = document.createElement('option');
+                        option.value = exec;
+                        option.textContent = exec;
+                        select.appendChild(option);
+                    });
+                    select.onchange = (e) => formData[field.name] = e.target.value;
+                    fieldDiv.appendChild(select);
+                } else if (field.type === 'select') {
+                    const selectGroup = document.createElement('div');
+                    selectGroup.className = 'select-group';
+
+                    const btnOK = document.createElement('div');
+                    btnOK.className = 'select-btn selected';
+                    btnOK.textContent = '✓ OK';
+                    btnOK.onclick = () => {
+                        btnOK.classList.add('selected');
+                        btnNOK.classList.remove('selected');
+                        formData[field.name] = 'OK';
+                    };
+
+                    const btnNOK = document.createElement('div');
+                    btnNOK.className = 'select-btn';
+                    btnNOK.textContent = '✗ NON OK';
+                    btnNOK.onclick = () => {
+                        btnNOK.classList.add('selected');
+                        btnOK.classList.remove('selected');
+                        formData[field.name] = 'NON OK';
+                    };
+
+                    selectGroup.appendChild(btnOK);
+                    selectGroup.appendChild(btnNOK);
+                    fieldDiv.appendChild(selectGroup);
+                    
+                    formData[field.name] = 'OK';
+                } else if (field.type === 'textarea') {
+                    const textarea = document.createElement('textarea');
+                    textarea.oninput = (e) => formData[field.name] = e.target.value;
+                    textarea.placeholder = 'Commentaires généraux...';
+                    fieldDiv.appendChild(textarea);
+                }
+
+                fieldsContainer.appendChild(fieldDiv);
+            });
+
+            updateNavButtons();
+        }
+
+        // Navigation entre onglets
+        function navigateSheet(direction) {
+            const currentIndex = allSheets.indexOf(currentSheet);
+            const newIndex = currentIndex + direction;
+            
+            if (newIndex >= 0 && newIndex < allSheets.length) {
+                selectSheet(allSheets[newIndex]);
+            }
+        }
+
+        function updateNavButtons() {
+            const currentIndex = allSheets.indexOf(currentSheet);
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === allSheets.length - 1;
+        }
+
+        // Sauvegarder l'entretien
+        async function saveEntretien() {
+            if (!workbook || !currentSheet) return;
+
+            showStatus('⏳ Sauvegarde en cours...', 'info');
+
+            // Logique de sauvegarde dans Excel + upload SharePoint
+            const robotConfig = CONFIG.robots[currentRobot];
+            await saveFileToSharePoint(robotConfig.path);
+            
+            // Réinitialiser le formulaire
+            formData = {
+                'Date': new Date().toISOString().split('T')[0],
+                'DATE': new Date().toISOString().split('T')[0],
+                'date': new Date().toISOString().split('T')[0]
+            };
+            displayForm();
+            displayHistory();
+        }
+    </script>
+</body>
+</html>
